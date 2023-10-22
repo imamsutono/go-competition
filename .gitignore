@@ -1,0 +1,43 @@
+.DS_Store
+# Dependency directories (remove the comment below to include it)
+vendor/
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+
+# Go workspace file
+go.work
+
+# Build
+build
+dist
+
+# Dependency directories (remove the comment below to include it)
+vendor/
+
+# Generated
+generated
+*.mock.gen.go
+wire_gen.go
+gen_test.db
+
+# IDE
+.vscode
+
+/postgres
+/outfile.json
+/result.json
+/volume
+
+.env.test
+.env
+
+/tmp
+
+# Mocks
+mock_*.go
+
+/etc

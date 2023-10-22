@@ -1,0 +1,483 @@
+openapi: 3.0.1
+info:
+  contact: {}
+  title: Kompit API
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+
+paths:
+  /ping:
+    post:
+      summary: Sample endpoint.
+      description: |
+        This endpoint is used to test if the server is running.
+        This endpoint can be accessed by anyone.
+        To access just execute the command below
+        ```bash
+        curl -X POST http://localhost:8080/ping \
+          --header 'Content-Type: application/json' \
+          --data '{ping: "pong"}'
+        ```
+        This endpoint will return the following HTTP 200 OK response when the ping starts with `pong`:
+        ```json
+        {
+          "pong": "pong"
+        }
+        ```
+        or will return 400 if the ping does not start with `pong`.
+      operationId: Ping_Post
+      security: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Ping_Post_Request'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ping_Post_200Response'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  ## ASSIGNMENT 1
+  /competitions:
+    post:
+      summary: Creates competition.
+      description: |
+        Creates a new competition. The request body should contain the following information:
+        1. `name`
+           
+           Name can contain any character and has to be between 3 and 255 characters.
+           Multiple competitions can have the same name.
+          
+        2. `start_date`
+           
+           The start date has to be in the future and will follow format `YYYY-MM-DD`.
+
+        This endpoint can only be accessed by admin. We will use basic authentication for this
+        endpoint with credential username `admin` and password `admin`.
+      operationId: Competitions_Post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Competitions_Post_Request'
+      security:
+        - Login: []
+      responses:
+        '201':
+          description: |
+            Created. Returns the id, name, and start date of the newly created competition.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Competitions_Post_201Response'
+        '400':
+          description: |
+            Bad Request. Returns this response if the request body or form is invalid.
+            Just throw any message if the request body is invalid.
+          content:
+            application/json:
+              schema:
+                oneOf: 
+                  - $ref: '#/components/schemas/ErrorResponse'
+                  # BONUS: If you can make the error response more specific.
+                  - $ref: '#/components/schemas/ErrorFormValidationResponse'
+        '401':
+          description: |
+            Unauthorized. Returns this response if the user is not admin.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  ## ASSIGNMENT 2
+  /competitions/{id}:
+    get:
+      summary: Returns a competition with the given id.
+      description: |
+        This endpoint retrieves a competition with the given ID. 
+        It should be accessible to anyone without requiring any credentials. 
+        The competition will include the following information:
+        1. `id`
+        2. `name`
+        3. `start_date`
+        4. `participants` The list of participants' registration ID and username.
+
+        This endpoint will return 2 types of responses:
+        1. HTTP 200 OK
+        2. HTTP 404 Not Found
+          
+           This is when the competition with such ID does not exist.
+
+      operationId: Competitions_Id_Get
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Competitions_Id_Get_200Response'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  ## ASSIGNMENT 3
+  /competitions/{id}/join:
+    post:
+      summary: Joins a competition with the given id.
+      description: |
+        This endpoint allows the user to join a competition with the given ID. 
+        To access this endpoint, basic authentication is required using the user's credentials, 
+        either with a username and password or an email and password. 
+        Upon successful registration, the user will receive a registration 
+        ID and will be added to the participant list of the competition.
+        
+        The user will be added to the competition's participant list.
+        This endpoint will return:
+          1. HTTP 200 OK. This status indicates that the user has successfully 
+             participated in the competition. The response will include the 
+             registration ID.
+          2. HTTP 400 Bad Request. This error occurs when the user has 
+             already registered as a participant of the competition.
+          3. HTTP 401 Unauthorized. This error occurs when the user provides 
+             an invalid combination of credentials, such as an incorrect 
+            username and password or an incorrect email and password.
+          4. HTTP 404 Not Found. This occurs when the competition with the 
+             specified ID does not exist.
+
+        On successful, returns the participant registration id.
+      operationId: Competitions_Id_Join_Post
+      parameters:
+        - name: id
+          description: The ID of the competition.
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      security:
+        - Login: []
+      responses:
+        '201':
+          description: |
+            Created. This status indicates that the user has successfully 
+            participated in the competition. The response will include the 
+            registration ID.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Competitions_Id_Join_Post_201Response'
+        '400':
+          description: |
+            Bad Request. This error occurs when the user has 
+            already registered as a participant of the competition.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: |
+            Unauthorized. This error occurs when the user provides 
+            an invalid combination of credentials, such as an incorrect 
+            username and password or an incorrect email and password.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: |
+            Not Found. This occurs when the competition with the 
+            specified ID does not exist.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  ## ASSIGNMENT 4
+  /users/{username}:
+    get:
+      summary: Returns a user with the given username.
+      description: |
+        This endpoint retrieves a user profile using the provided username. 
+        It can be accessed by anyone without requiring authorization. 
+        The response will include the following information:
+        1. `username`
+        2. `join_date`
+        3. `competitions`
+        
+            This field contains list of the registration IDs, names, and 
+            start dates of the competitions that the user has joined. 
+            The list is sorted by the closest start date.
+        
+        This endpoints returns 4 types of responses:
+
+        1. HTTP 200 OK.
+        2. HTTP 404 Not Found. This occurs when the user with the specified username does not exists.
+      operationId: Users_Username_Get
+      security: []
+      parameters:
+        - name: username
+          description: The username of the user.
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern:  ^[a-z0-9_-]{3,16}$
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Users_Username_Get_200Response'
+        '404':
+          description: |
+            Not Found. This occurs when the user with the specified username does not exists.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  ## ASSIGNMENT 5
+  /register:
+    post:
+      summary: Registers a new user.
+      description: |
+        Registers a new user. The request body should contain the following information:
+        1. `username`
+           A username can only contain lowercase letters, numbers, underscores, and hyphens. 
+           It must be between 3 and 16 characters in length and must not already 
+           be registered in the system.
+        2. `email`
+           The email must be in a valid format and must not already registered in the system.
+        3. `password`
+           The password must be at least 8 characters long.
+        
+        The email/username or password will be used for basic authentication 
+        to register to a competition.
+
+        This endpoint will return:
+        1. HTTP 201 Created. This status code indicates that the user has 
+           successfully registered. The response will also include the join date.
+        2. HTTP 400 Bad Request. This error occurs when the request data does 
+          not follow the specified rules.
+      operationId: Register_Post
+      security: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Register_Post_Request'
+      responses:
+        '201':
+          description: |
+            Created. This status code indicates that the user has 
+            successfully registered. The response will also include the join date.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Register_Post_201Response'
+        '400':
+          description: |
+           Bad Request. This error occurs when the request data does 
+           not follow the specified rules.
+          content:
+            application/json:
+              schema:
+                oneOf: 
+                  - $ref: '#/components/schemas/ErrorResponse'
+                  # BONUS: If you can make the error response more specific.
+                  - $ref: '#/components/schemas/ErrorFormValidationResponse'
+components:
+  schemas:
+    Ping_Post_Request:
+      type: object
+      properties:
+        ping:
+          type: string
+          example: 'pong'
+    Ping_Post_200Response:
+      type: object
+      properties:
+        pong:
+          type: string
+          example: 'pong'
+    Competitions_Post_Request:
+      type: object
+      properties:
+        name:
+          type: string
+          example: 'My Competition'
+          minLength: 3
+          maxLength: 255
+        startDate:
+          type: string
+          format: date-time
+          example: '2020-12-31'
+    Competitions_Post_201Response:
+      type: object
+      properties:
+        id:
+          description: |
+            The id of the newly created competition. This is unique for each competition.
+          type: integer
+          format: int64
+          example: 1
+        name:
+          type: string
+          example: 'My Competition'
+        startDate:
+          type: string
+          format: date-time
+          example: '2020-12-31'
+    Competitions_Id_Get_200Response:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        startDate:
+          type: string
+          format: date-time
+        participants:
+          description: | 
+            This data contains a list of participants and their registration IDs. 
+            The list will be sorted in ascending order based on the registration IDs.
+          type: array
+          items:
+            $ref: '#/components/schemas/Competitions_Id_Get_200Response_Participants_Item'
+    Competitions_Id_Get_200Response_Participants_Item:
+      type: object
+      required:
+        - registration_id
+        - username
+      properties:
+        registration_id:
+          type: integer
+          format: int64
+          example: 1
+        username:
+          type: string
+          pattern: ^[a-z0-9_-]{3,16}$
+    Competitions_Id_Join_Post_201Response:
+      type: object
+      required: 
+        -  registration_id
+      properties:
+        registration_id:
+          type: integer
+          format: int64
+    Register_Post_Request:
+      type: object
+      required:
+        - username
+        - email
+        - password
+      properties:
+        username:
+          type: string
+          pattern: ^[a-z0-9_-]{3,16}$
+          example: 'john_doe'
+        email:
+          type: string
+          format: email
+          example: 'john.doe@example.com'
+        password:
+          type: string
+          minLength: 8
+    Register_Post_201Response:
+      type: object
+      required: 
+        -  join_date
+      properties:
+        join_date:
+          description: This field represents the date when the user joins the platform.
+          type: string
+          format: date-time
+          example: '2020-12-31'
+    Users_Username_Get_200Response:
+      type: object
+      required: 
+        - username
+        - join_date
+        - competitions
+      properties:
+        username:
+          type: string
+          pattern: ^[a-z0-9_-]{3,16}$
+        join_date:
+          description: This field represents the date when the user joins the platform.
+          type: string
+          format: date-time
+          example: '2020-12-31'
+        competitions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Users_Username_Get_200Response_Competitions_Item'
+    Users_Username_Get_200Response_Competitions_Item:
+      type: object
+      required:
+        - registration_id
+        - name
+        - start_date
+      properties:
+        registration_id:
+          description: The registration ID of the user in the competition.
+          type: integer
+          format: int64
+          example: 1
+        name:
+          description: The name of the competition.
+          type: string
+          example: 'My Competition'
+        start_date:
+          description: The start date of the competition.
+          type: string
+          format: date-time
+          example: '2020-12-31'
+    ErrorResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: Error Message
+    ErrorFormValidationResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: 'The request body is invalid.'
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/ErrorFormValidationResponse_Item'
+    ErrorFormValidationResponse_Item:
+      type: object
+      properties:
+        field:
+          type: string
+          example: 'username'
+        message:
+          type: string
+          example: 'Username is already taken.'
+  securitySchemes:
+    Login:
+      type: http
+      scheme: basic
