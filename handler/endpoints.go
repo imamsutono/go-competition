@@ -8,6 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/kompit-recruitment/backend/generated/api"
 	"github.com/kompit-recruitment/backend/initializers"
+	"github.com/kompit-recruitment/backend/models"
 	"gopkg.in/guregu/null.v4"
 )
 
@@ -47,19 +48,26 @@ func (h *Handler) PingPost(c *gin.Context) {
 // Creates competition.
 // (POST /competitions)
 func (h *Handler) CompetitionsPost(c *gin.Context) {
-	var competition api.CompetitionsPostJSONRequestBody
+	// gin.BasicAuth(gin.Accounts{"admin": "admin"})
 
-	if err := c.ShouldBindJSON(&competition); err != nil {
+	var payload models.CompetitionPostRequest
+
+	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
-	initializers.DB.Create(&competition)
+	newCompetition := models.Competition{
+		Name:      payload.Name,
+		StartDate: payload.StartDate,
+	}
 
-	c.JSON(http.StatusOK, gin.H{"competition": competition})
+	initializers.DB.Create(&newCompetition)
 
-	// gin.BasicAuth(gin.Accounts{"admin": "admin"})
-	// c.JSON(http.StatusNotImplemented, "TODO: Implement me")
+	c.JSON(http.StatusCreated, gin.H{
+		"status": "success",
+		"data":   newCompetition,
+	})
 }
 
 // TODO: ASSIGNMENT 2
