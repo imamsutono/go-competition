@@ -158,5 +158,26 @@ func (h *Handler) RegisterPost(c *gin.Context) {
 // Returns a user with the given username.
 // (GET /users/{username})
 func (h *Handler) UsersUsernameGet(c *gin.Context, username string) {
-	c.JSON(http.StatusNotImplemented, "TODO: Implement me")
+	var user models.User
+
+	if err := initializers.DB.Preload("Competitions").First(&user, "username = ?", username).Error; err != nil {
+		switch err {
+		case gorm.ErrRecordNotFound:
+			c.AbortWithStatusJSON(http.StatusNotFound, api.ErrorResponse{
+				Message: null.StringFrom("User not found").Ptr(),
+			})
+			return
+		default:
+			c.AbortWithStatusJSON(http.StatusInternalServerError, api.ErrorResponse{
+				Message: null.StringFrom(err.Error()).Ptr(),
+			})
+			return
+		}
+	}
+
+	c.JSON(http.StatusOK, api.UsersUsernameGet200Response{
+		JoinDate:     user.CreatedAt,
+		Username:     user.Username,
+		Competitions: []api.UsersUsernameGet200ResponseCompetitionsItem{},
+	})
 }
