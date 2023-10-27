@@ -10,7 +10,7 @@ import (
 	"gorm.io/gorm"
 )
 
-var db *gorm.DB
+var DB *gorm.DB
 var err error
 
 func InitDatabase() *gorm.DB {
@@ -21,7 +21,7 @@ func InitDatabase() *gorm.DB {
 	port := viper.GetString("DB_PORT")
 	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable TimeZone=Asia/Jakarta", host, user, password, dbName, port)
 
-	db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
 
 	if err != nil {
 		log.Panic("Error init database: ", err.Error())
@@ -31,10 +31,10 @@ func InitDatabase() *gorm.DB {
 
 	doMigration()
 
-	return db
+	return DB
 }
 
 func doMigration() {
-	db.AutoMigrate(&models.User{})
-	db.AutoMigrate(&models.Competition{})
+	DB.AutoMigrate(&models.User{})
+	DB.AutoMigrate(&models.Competition{})
 }
