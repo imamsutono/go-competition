@@ -51,23 +51,26 @@ func (h *Handler) PingPost(c *gin.Context) {
 func (h *Handler) CompetitionsPost(c *gin.Context) {
 	// gin.BasicAuth(gin.Accounts{"admin": "admin"})
 
-	var payload models.CompetitionPostRequest
+	var req api.CompetitionsPostJSONRequestBody
 
-	if err := c.ShouldBindJSON(&payload); err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, api.ErrorResponse{
+			Message: null.StringFrom(err.Error()).Ptr(),
+		})
 		return
 	}
 
 	newCompetition := models.Competition{
-		Name:      payload.Name,
-		StartDate: payload.StartDate,
+		Name:      *req.Name,
+		StartDate: *req.StartDate,
 	}
 
 	initializers.DB.Create(&newCompetition)
 
-	c.JSON(http.StatusCreated, gin.H{
-		"status": "success",
-		"data":   newCompetition,
+	c.JSON(http.StatusCreated, api.CompetitionsPost201Response{
+		Id:        &newCompetition.ID,
+		Name:      &newCompetition.Name,
+		StartDate: &newCompetition.StartDate,
 	})
 }
 
@@ -77,7 +80,7 @@ func (h *Handler) CompetitionsPost(c *gin.Context) {
 func (h *Handler) CompetitionsIdGet(c *gin.Context, id int64) {
 	var competition models.Competition
 
-	if err := initializers.DB.First(&competition, id).Error; err != nil {
+	if err := initializers.DB.Preload("Users").First(&competition, id).Error; err != nil {
 		switch err {
 		case gorm.ErrRecordNotFound:
 			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"message": "Data not found"})
@@ -88,7 +91,12 @@ func (h *Handler) CompetitionsIdGet(c *gin.Context, id int64) {
 		}
 	}
 
-	c.JSON(http.StatusOK, gin.H{"competition": competition})
+	c.JSON(http.StatusOK, api.CompetitionsIdGet200Response{
+		Id:           &competition.ID,
+		Name:         &competition.Name,
+		StartDate:    &competition.StartDate,
+		Participants: &[]api.CompetitionsIdGet200ResponseParticipantsItem{},
+	})
 }
 
 // TODO: ASSIGNMENT 3
