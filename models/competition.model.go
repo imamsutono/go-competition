@@ -1,16 +1,12 @@
 package models
 
-import (
-	"time"
-
-	"github.com/google/uuid"
-)
+import "time"
 
 type Competition struct {
-	ID        uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primary_key"`
-	Name      string    `gorm:"varchar(255);not null"`
-	StartDate string    `gorm:"varchar(20);not null"`
-	CreatedAt time.Time `gorm:"default:CURRENT_TIMESTAMP"`
+	ID        uint64    `gorm:"primaryKey" json:"id"`
+	Name      string    `gorm:"varchar(255);not null" json:"name"`
+	StartDate string    `gorm:"varchar(20);not null" json:"start_date"`
+	CreatedAt time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"created_at"`
 	User      []*User   `gorm:"many2many:user_competitions;" json:"participants"`
 }
 

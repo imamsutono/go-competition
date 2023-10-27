@@ -10,6 +10,7 @@ import (
 	"github.com/kompit-recruitment/backend/initializers"
 	"github.com/kompit-recruitment/backend/models"
 	"gopkg.in/guregu/null.v4"
+	"gorm.io/gorm"
 )
 
 // Sample endpoint.
@@ -74,7 +75,20 @@ func (h *Handler) CompetitionsPost(c *gin.Context) {
 // Returns a competition with the given id.
 // (GET /competitions/{id})
 func (h *Handler) CompetitionsIdGet(c *gin.Context, id int64) {
-	c.JSON(http.StatusNotImplemented, "TODO: Implement me")
+	var competition models.Competition
+
+	if err := initializers.DB.First(&competition, id).Error; err != nil {
+		switch err {
+		case gorm.ErrRecordNotFound:
+			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"message": "Data not found"})
+			return
+		default:
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			return
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{"competition": competition})
 }
 
 // TODO: ASSIGNMENT 3
