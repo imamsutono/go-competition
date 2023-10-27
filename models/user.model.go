@@ -2,15 +2,13 @@ package models
 
 import (
 	"time"
-
-	"github.com/google/uuid"
 )
 
 type User struct {
-	ID           uuid.UUID `gorm:"type:uuid;primary_key" json:"registration_id"`
-	Username     string    `gorm:"type:varchar(20);not null" json:"username"`
-	Email        string    `gorm:"uniqueIndex;not null" json:"email"`
-	Password     string    `gorm:"not null"`
-	CreatedAt    time.Time
+	ID           int64          `gorm:"primaryKey" json:"registration_id"`
+	Username     string         `gorm:"type:varchar(20);not null" json:"username" validate:"required,alphanum,lowercase,min=3,max=16"`
+	Email        string         `gorm:"type:varchar(255);uniqueIndex;not null" json:"email" validate:"required,email"`
+	Password     string         `gorm:"not null" validate:"required,min=8"`
+	CreatedAt    time.Time      `gorm:"default:CURRENT_TIMESTAMP" json:"join_date"`
 	Competitions []*Competition `gorm:"many2many:user_competitions;" json:"competitions"`
 }
