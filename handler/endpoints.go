@@ -4,11 +4,13 @@ package handler
 import (
 	"net/http"
 	"regexp"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/kompit-recruitment/backend/generated/api"
 	"github.com/kompit-recruitment/backend/initializers"
 	"github.com/kompit-recruitment/backend/models"
+	"github.com/kompit-recruitment/backend/utils"
 	"gopkg.in/guregu/null.v4"
 	"gorm.io/gorm"
 )
@@ -110,7 +112,46 @@ func (h *Handler) CompetitionsIdJoinPost(c *gin.Context, id int64) {
 // Registers a new user.
 // (POST /register)
 func (h *Handler) RegisterPost(c *gin.Context) {
-	c.JSON(http.StatusNotImplemented, "TODO: Implement me")
+	var req api.RegisterPostJSONRequestBody
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, api.ErrorResponse{
+			Message: null.StringFrom(err.Error()).Ptr(),
+		})
+		return
+	}
+
+	hashedPassword, err := utils.HashPassword(req.Password)
+	if err != nil {
+		c.JSON(http.StatusBadGateway, api.ErrorResponse{
+			Message: null.StringFrom(err.Error()).Ptr(),
+		})
+		return
+	}
+
+	newUser := models.User{
+		Username: req.Username,
+		Email:    string(req.Email),
+		Password: hashedPassword,
+	}
+
+	result := initializers.DB.Create(&newUser)
+
+	if result.Error != nil && strings.Contains(result.Error.Error(), "duplicate key value violates unique") {
+		c.JSON(http.StatusBadRequest, api.ErrorResponse{
+			Message: null.StringFrom(result.Error.Error()).Ptr(),
+		})
+		return
+	} else if result.Error != nil {
+		c.JSON(http.StatusBadRequest, api.ErrorResponse{
+			Message: null.StringFrom(result.Error.Error()).Ptr(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusCreated, api.RegisterPost201Response{
+		JoinDate: newUser.CreatedAt,
+	})
 }
 
 // TODO: ASSIGNMENT 5
