@@ -4,6 +4,7 @@ package handler
 import (
 	"net/http"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -13,6 +14,7 @@ import (
 	"github.com/kompit-recruitment/backend/utils"
 	"gopkg.in/guregu/null.v4"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 // Sample endpoint.
@@ -53,7 +55,7 @@ func (h *Handler) PingPost(c *gin.Context) {
 func (h *Handler) CompetitionsPost(c *gin.Context) {
 	// gin.BasicAuth(gin.Accounts{"admin": "admin"})
 
-	var req api.CompetitionsPostJSONRequestBody
+	var req models.CompetitionPostRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, api.ErrorResponse{
@@ -63,16 +65,16 @@ func (h *Handler) CompetitionsPost(c *gin.Context) {
 	}
 
 	newCompetition := models.Competition{
-		Name:      *req.Name,
-		StartDate: *req.StartDate,
+		Name:      req.Name,
+		StartDate: req.StartDate,
 	}
 
 	initializers.DB.Create(&newCompetition)
 
-	c.JSON(http.StatusCreated, api.CompetitionsPost201Response{
-		Id:        &newCompetition.ID,
-		Name:      &newCompetition.Name,
-		StartDate: &newCompetition.StartDate,
+	c.JSON(http.StatusCreated, models.CompetitionsPost201Response{
+		Id:        newCompetition.ID,
+		Name:      newCompetition.Name,
+		StartDate: newCompetition.StartDate,
 	})
 }
 
@@ -93,11 +95,11 @@ func (h *Handler) CompetitionsIdGet(c *gin.Context, id int64) {
 		}
 	}
 
-	c.JSON(http.StatusOK, api.CompetitionsIdGet200Response{
+	c.JSON(http.StatusOK, models.CompetitionsIdGet200Response{
 		Id:           &competition.ID,
 		Name:         &competition.Name,
 		StartDate:    &competition.StartDate,
-		Participants: &[]api.CompetitionsIdGet200ResponseParticipantsItem{},
+		Participants: &[]models.CompetitionsIdGet200ResponseParticipantsItem{},
 	})
 }
 
@@ -105,7 +107,25 @@ func (h *Handler) CompetitionsIdGet(c *gin.Context, id int64) {
 // Joins a competition with the given id.
 // (POST /competitions/{id}/join)
 func (h *Handler) CompetitionsIdJoinPost(c *gin.Context, id int64) {
-	c.JSON(http.StatusNotImplemented, "TODO: Implement me")
+	competitionID, _ := strconv.Atoi(c.Param("id"))
+	userID := 1
+
+	data := models.UserCompetition{
+		CompetitionID: int64(competitionID),
+		UserID:        int64(userID),
+	}
+
+	result := initializers.DB.Clauses(clause.Returning{}).Create(&data)
+	if err := result.Error; err != nil {
+		c.JSON(http.StatusBadRequest, api.ErrorResponse{
+			Message: null.StringFrom(err.Error()).Ptr(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusCreated, api.CompetitionsIdJoinPost201Response{
+		RegistrationId: data.RegistrationID,
+	})
 }
 
 // TODO: ASSIGNMENT 4
@@ -160,7 +180,11 @@ func (h *Handler) RegisterPost(c *gin.Context) {
 func (h *Handler) UsersUsernameGet(c *gin.Context, username string) {
 	var user models.User
 
-	if err := initializers.DB.Preload("Competitions").First(&user, "username = ?", username).Error; err != nil {
+	data := initializers.DB.Preload("Competitions", func(db *gorm.DB) *gorm.DB {
+		return db.Select("ID", "Name", "StartDate")
+	}).First(&user, "username = ?", username)
+
+	if err := data.Error; err != nil {
 		switch err {
 		case gorm.ErrRecordNotFound:
 			c.AbortWithStatusJSON(http.StatusNotFound, api.ErrorResponse{
@@ -175,9 +199,9 @@ func (h *Handler) UsersUsernameGet(c *gin.Context, username string) {
 		}
 	}
 
-	c.JSON(http.StatusOK, api.UsersUsernameGet200Response{
-		JoinDate:     user.CreatedAt,
-		Username:     user.Username,
-		Competitions: []api.UsersUsernameGet200ResponseCompetitionsItem{},
+	c.JSON(http.StatusOK, gin.H{
+		"username":     user.Username,
+		"join_date":    user.CreatedAt,
+		"competitions": user.Competitions,
 	})
 }

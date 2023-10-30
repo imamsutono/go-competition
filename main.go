@@ -17,6 +17,7 @@ func main() {
 
 	//TODO: You can add your own middlewares here
 	router.Use(gin.Recovery())
+	// router.Use(gin.BasicAuth(gin.Accounts{"admin": "admin"}))
 
 	api.RegisterHandlers(router, h)
 
