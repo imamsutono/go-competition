@@ -1,12 +1,14 @@
 package models
 
-import "time"
+import (
+	"time"
+)
 
 type Competition struct {
-	ID        int64     `gorm:"primaryKey" json:"id"`
-	Name      string    `gorm:"varchar(255);not null" json:"name" validate:"required,min=3,max=255"`
-	StartDate string    `gorm:"varchar(20);not null" json:"startDate" validate:"required,datetime"`
-	CreatedAt time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"createdAt"`
+	ID        int64     `gorm:"primaryKey;column:id" json:"id"`
+	Name      string    `gorm:"column:name;varchar(255);not null" json:"name" validate:"required,min=3,max=255"`
+	StartDate string    `gorm:"column:start_date;varchar(20);not null" json:"startDate" validate:"required,datetime"`
+	CreatedAt time.Time `gorm:"column:created_at;default:CURRENT_TIMESTAMP" json:"createdAt"`
 	Users     []*User   `gorm:"many2many:user_competitions;" json:"participants"`
 }
 
